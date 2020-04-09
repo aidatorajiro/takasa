@@ -1,5 +1,4 @@
 # please download elevation model from https://fgd.gsi.go.jp/download/menu.php (login required)
-
 # code based on https://www.gis-py.com/entry/2016/01/10/163027
 
 import re
