@@ -21,9 +21,7 @@ pathstart_nodeid = 出発地のOpenStreetMap上のNode ID
 pathend_nodeid = 目的地のOpenStreetMap上のNode ID
 ```
 
-Node IDは<https://openstreetmap.org/>などで検索しましょう。
-
-右クリックで「地物を検索(Query Features)」すると付近の道が出現します。道のリンクをクリックすると、その道を構成するノードが現れます。
+Node IDは<https://openstreetmap.org/>などで検索しましょう。右クリックで「地物を検索(Query Features)」すると付近の道が出現します。道のリンクをクリックすると、その道を構成するノードが現れます。
 
 次に、以下の順でpythonファイルを実行します。
 
