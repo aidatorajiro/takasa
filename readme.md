@@ -23,7 +23,7 @@ pathend_nodeid = 目的地のOpenStreetMap上のNode ID
 
 Node IDは<https://openstreetmap.org/>などで検索しましょう。
 
-右クリックで「地所を検索(Query Features)」すると付近のNodeが出現します。
+右クリックで「地物を検索(Query Features)」すると付近のNodeが出現します。
 
 次に、以下の順でpythonファイルを実行します。
 
