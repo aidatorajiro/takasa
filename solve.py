@@ -2,6 +2,9 @@ from scipy.sparse import csr_matrix, csc_matrix, coo_matrix, lil_matrix
 import numpy as np
 import json
 import shelve
+import scipy
+
+print("Loading database")
 
 with open("mapdata") as f:
     jsondata = json.load(f)
@@ -12,6 +15,8 @@ elevation_shelve.close()
 
 waydata = list(filter(lambda x: x['type'] == 'way', jsondata['elements']))
 nodedata = list(filter(lambda x: x['type'] == 'node', jsondata['elements']))
+
+print("Creating node table")
 
 # node id to matrix index
 nodeid_to_index = {}
@@ -49,8 +54,15 @@ def get_elevation(lat, lon):
             continue
     return None
 
-# prepare matrix
-mat = csr_matrix((len(nodedata), len(nodedata)),dtype=np.float32)
+
+import math
+
+print("Calculating loss")
+
+# calculate length and elevation loss
+connection = []
+loss_len = []
+loss_elev = []
 
 for w in waydata:
     for i in range(len(w['nodes']) - 1):
@@ -58,11 +70,64 @@ for w in waydata:
         endpoint = nodeid_to_data[w['nodes'][i + 1]]
         elev1 = get_elevation(startpoint['lat'], startpoint['lon'])
         elev2 = get_elevation(endpoint['lat'], endpoint['lon'])
-        loss_elev = abs(elev1 - elev2)
-        print(loss_elev)
+        connection.append([startpoint, endpoint])
+        ll = math.sqrt((startpoint['lat'] - endpoint['lat'])**2 + (startpoint['lon'] - endpoint['lon'])**2)
+        le = abs(elev1 - elev2)/ll
+        loss_len.append(ll)
+        loss_elev.append(le)
 
+# calculate final loss
+def normalize(x):
+    x = np.array(x)
+    x = (x - x.mean()) / x.std()
+    return x
 
+loss_len = normalize(loss_len)
+loss_elev = normalize(loss_elev)
+loss_len += -loss_len.min() + 0.1
+loss_elev += -loss_elev.min() + 0.1
 
+loss = loss_len + loss_elev
 
+print("Making graph matrix")
 
+# prepare matrix
+mat = lil_matrix((len(nodedata), len(nodedata)))
 
+for i, [startpoint, endpoint] in enumerate(connection):
+    ind1 = nodeid_to_index[startpoint['id']]
+    ind2 = nodeid_to_index[endpoint['id']]
+    mat[ind1,ind2] = loss[i]
+    mat[ind2,ind1] = loss[i]
+
+print("Solving graph")
+
+matcsr = mat.tocsr()
+
+from config import pathstart_nodeid, pathend_nodeid
+
+start_index = nodeid_to_index[pathstart_nodeid]
+destination_index = nodeid_to_index[pathend_nodeid]
+
+result = scipy.sparse.csgraph.shortest_path(matcsr, return_predecessors=True, indices=start_index)[1]
+
+current_index = destination_index
+index_list = [destination_index]
+
+while True:
+    current_index = result[current_index]
+    index_list.append(current_index)
+    if current_index == start_index:
+        break
+
+print("Done! Writing results...")
+
+with open("nodeids.results", "w") as f:
+    f.write(str(list(map(lambda x: index_to_nodeid[x], index_list))))
+
+with open("overpass_query.results", "w") as f:
+    f.write("(\n")
+    for x in index_list:
+        f.write("node(%s);\n" % index_to_nodeid[x])
+    f.write(");\n")
+    f.write("out;")

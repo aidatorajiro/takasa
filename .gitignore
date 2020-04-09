@@ -2,4 +2,5 @@
 /mapdata
 /elevation.shel
 .DS_Store
-memo.txt
+config.py
+*.results

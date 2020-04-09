@@ -1,7 +1,8 @@
 import sys
+from config import pathbound_small, pathbound_large
 
-latlon_from = [float(sys.argv[1]), float(sys.argv[2])]
-latlon_to = [float(sys.argv[3]), float(sys.argv[4])]
+latlon_from = pathbound_small
+latlon_to = pathbound_large
 
 uri = "https://lz4.overpass-api.de/api/interpreter"
 
