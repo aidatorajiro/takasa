@@ -13,7 +13,7 @@ elevation_data = []
 #XMLを格納するフォルダ
 path = "./DL"
 #ファイル名取得
-files = [relpath(x,path) for x in glob(join(path,'**/*.xml'))]
+files = [relpath(x,path) for x in glob(join(path,'**/*.xml'), recursive=True)]
 
 # 検索パターンをコンパイル
 r1 = re.compile("<gml:lowerCorner>(.+) (.+)</gml:lowerCorner>")
