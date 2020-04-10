@@ -27,9 +27,6 @@ index_to_nodeid = {}
 # node id to json data
 nodeid_to_data = {}
 
-# node id to height
-nodeid_to_elevation = {}
-
 # prepare utility hash objects
 for i, n in enumerate(nodedata):
     nodeid_to_index[n['id']] = i
