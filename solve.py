@@ -4,9 +4,18 @@ import json
 import shelve
 import scipy
 
-print("Loading database")
+#METHOD = 'NORMAL_MINFIX'
+#METHOD = 'DIVMAX'
+METHOD = 'DIVDEV'
+#METHOD = 'LENGTH'
+#METHOD = 'ELEVATION'
 
-with open("mapdata") as f:
+# coeffs for (langth loss, elevation loss)
+COEFFS = (1, 1)
+
+print('Loading database')
+
+with open('mapdata') as f:
     jsondata = json.load(f)
 
 elevation_shelve = shelve.open('elevation.shel')
@@ -16,7 +25,7 @@ elevation_shelve.close()
 waydata = list(filter(lambda x: x['type'] == 'way', jsondata['elements']))
 nodedata = list(filter(lambda x: x['type'] == 'node', jsondata['elements']))
 
-print("Creating node table")
+print('Creating node table')
 
 # node id to matrix index
 nodeid_to_index = {}
@@ -57,7 +66,7 @@ def get_elevation(lat, lon):
 
 import math
 
-print("Calculating loss")
+print('Calculating loss')
 
 # calculate length and elevation loss
 connection = []
@@ -82,14 +91,34 @@ def normalize(x):
     x = (x - x.mean()) / x.std()
     return x
 
-loss_len = normalize(loss_len)
-loss_elev = normalize(loss_elev)
-loss_len += -loss_len.min() + 0.1
-loss_elev += -loss_elev.min() + 0.1
+def divmax(x):
+    x = np.array(x)
+    return x / x.max()
 
-loss = loss_len + loss_elev
+def divdev(x):
+    x = np.array(x)
+    return x / x.std()
 
-print("Making graph matrix")
+if METHOD == 'NORMAL_MINFIX':
+    loss_len = normalize(loss_len)
+    loss_elev = normalize(loss_elev)
+    loss_len += -loss_len.min() + 0.1
+    loss_elev += -loss_elev.min() + 0.1
+    loss = loss_len*COEFFS[0] + loss_elev*COEFFS[1]
+if METHOD == 'DIVMAX':
+    loss_len = divmax(loss_len)
+    loss_elev = divmax(loss_elev)
+    loss = loss_len*COEFFS[0] + loss_elev*COEFFS[1]
+if METHOD == 'DIVDEV':
+    loss_len = divdev(loss_len)
+    loss_elev = divdev(loss_elev)
+    loss = loss_len*COEFFS[0] + loss_elev*COEFFS[1]
+if METHOD == 'LENGTH':
+    loss = loss_len
+if METHOD == 'ELEVATION':
+    loss = loss_elev
+
+print('Making graph matrix')
 
 # prepare matrix
 mat = lil_matrix((len(nodedata), len(nodedata)))
@@ -100,7 +129,7 @@ for i, [startpoint, endpoint] in enumerate(connection):
     mat[ind1,ind2] = loss[i]
     mat[ind2,ind1] = loss[i]
 
-print("Solving graph")
+print('Solving graph')
 
 matcsr = mat.tocsr()
 
@@ -120,14 +149,14 @@ while True:
     if current_index == start_index:
         break
 
-print("Done! Writing results...")
+print('Done! Writing results...')
 
-with open("nodeids.results", "w") as f:
+with open('nodeids.results', 'w') as f:
     f.write(str(list(map(lambda x: index_to_nodeid[x], index_list))))
 
-with open("overpass_query.results", "w") as f:
-    f.write("(\n")
+with open('overpass_query.results', 'w') as f:
+    f.write('(\n')
     for x in index_list:
-        f.write("node(%s);\n" % index_to_nodeid[x])
-    f.write(");\n")
-    f.write("out;")
+        f.write('node(%s);\n' % index_to_nodeid[x])
+    f.write(');\n')
+    f.write('out;')
