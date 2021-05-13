@@ -4,8 +4,8 @@ import json
 import shelve
 import scipy
 
-#method = one of 'NORMAL_MINFIX', 'DIVMAX', 'DIVDEV', 'LENGTH', 'ELEVATION', 'NORMAL_CLIP'
-def solve(pathstart_nodeid, pathend_nodeid, method = 'NORMAL_CLIP', coeffs = (1, 1)):
+#method = one of 'NORMAL_MINFIX', 'DIVMAX', 'DIVDEV', 'LENGTH', 'ELEVATION', 'NORMAL_CLIP', 'MULTIPLY'
+def solve(pathstart_nodeid, pathend_nodeid, method = 'MULTIPLY', coeffs = (1, 1)):
     
     print('Loading database')
     
@@ -114,6 +114,8 @@ def solve(pathstart_nodeid, pathend_nodeid, method = 'NORMAL_CLIP', coeffs = (1,
         loss = loss_len*coeffs[0] + loss_elev*coeffs[1]
         nazo_sum = np.abs(loss).sum()
         loss = np.where(loss>0, loss, nazo_sum)
+    if method == 'MULTIPLY':
+        loss = np.array(loss_len)*np.array(loss_elev)
     
     print('Making graph matrix')
     
